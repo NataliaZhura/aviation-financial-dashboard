@@ -1,0 +1,60 @@
+<section class="aviation-flat-page">
+  <div class="flat-header">
+    <h2>Налет, ставка летного часа и новая лизинговая сделка</h2>
+    <p>На странице сопоставлены фактические данные ФНБ за 2025 год и базовый прогноз модели новой сделки Ми-8МТВ-1. Все денежные суммы показаны в млн руб. Прогноз не является фактической отчетностью компании.</p>
+  </div>
+  <div id="flight-message">Загрузка...</div>
+  <div class="flat-grid" id="flight-fact-kpis"></div>
+  <section class="flat-section"><h3>Базовый сценарий новой сделки</h3><div class="flat-grid" id="flight-project-kpis"></div></section>
+  <section class="flat-section"><h3>Покрытие лизингового платежа по финансовой модели</h3><table class="flat-table" id="flight-table"></table></section>
+  <section class="flat-section"><h3>Динамика проекта</h3><table class="flat-table" id="flight-history"></table></section>
+  <script>
+  (function(){
+    function e(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    function n(v,d){return v==null||!isFinite(Number(v))?'-':Number(v).toLocaleString('ru-RU',{maximumFractionDigits:d==null?1:d,minimumFractionDigits:d==null?1:0});}
+    function p(v){return v==null||!isFinite(Number(v))?'-':n(Number(v)*100,1)+'%';}
+    function x(v){return v==null||!isFinite(Number(v))?'-':n(v,2)+'x';}
+    function m(v){return v==null||!isFinite(Number(v))?'-':n(Number(v)/1000,1);}
+    function c(a,b,note,neg){return '<article class="flat-card"><div class="flat-label">'+e(a)+'</div><div class="flat-value '+(neg?'flat-negative':'')+'">'+e(b)+'</div><div class="flat-note">'+e(note)+'</div></article>';}
+    function r(a,b,note){return '<tr><td>'+e(a)+'</td><td>'+e(b)+'</td><td>'+e(note)+'</td></tr>';}
+    var q=window.AVIATION_PERIOD||{year:2024,periodType:'year',quarter:1};
+    google.script.run.withSuccessHandler(function(xr){
+      if(!xr||xr.status!=='success'){document.getElementById('flight-message').textContent=xr&&xr.error||'Ошибка загрузки';return;}
+      var d=xr.data||{},pm=d.projectModel||{},history=d.projectHistory||[];
+      if(!pm.available){document.getElementById('flight-message').innerHTML='<div class="flat-alert">В плоской таблице пока нет строк финансовой модели новой сделки Ми-8МТВ-1.</div>';return;}
+      document.getElementById('flight-message').innerHTML='<div class="flat-alert">Факт ФНБ: 2025 год. Прогноз сделки: '+e(pm.displayYear)+' год. DSCR в исходной модели: EBITDA проекта / годовой лизинговый платеж. FCF показан отдельно.</div>';
+      document.getElementById('flight-fact-kpis').innerHTML=[
+        c('Фактический налет ФНБ',n(pm.factMonthlyHours2025,1)+' л.ч./мес.','источник: ФНБ, 2025'),
+        c('Фактическая ставка часа',n((Number(pm.factHourlyRate2025)||0)/1000,1)+' тыс. руб.','источник: ФНБ, 2025'),
+        c('Фактическая себестоимость часа',n((Number(pm.factHourlyCost2025)||0)/1000,1)+' тыс. руб.','без лизинга, ФНБ 2025'),
+        c('Текущий платеж ФНБ',m(pm.factAnnualPayment2025)+' млн руб./год','годовой эквивалент, ФНБ 2025')
+      ].join('');
+      document.getElementById('flight-project-kpis').innerHTML=[
+        c('Стоимость вертолета',m(pm.helicopterCost)+' млн руб.','новая сделка Ми-8МТВ-1'),
+        c('Ставка и срок лизинга',p(pm.leaseRate)+' / '+n(pm.leaseTermYears,0)+' лет','допущения модели'),
+        c('Налет по модели',n(pm.annualHours,0)+' л.ч./год','базовый сценарий'),
+        c('Ставка летного часа',n((Number(pm.hourlyRate)||0)/1000,1)+' тыс. руб.','базовый сценарий'),
+        c('Выручка проекта',m(pm.revenue)+' млн руб.','прогноз '+pm.displayYear+' года'),
+        c('EBITDA проекта',m(pm.ebitda)+' млн руб.','прогноз '+pm.displayYear+' года',Number(pm.ebitda)<0),
+        c('Годовой платеж сделки',m(pm.leasePayment)+' млн руб.','постоянный платеж по модели'),
+        c('DSCR новой сделки',x(pm.dscr),'EBITDA / лизинговый платеж',Number(pm.dscr)<1)
+      ].join('');
+      document.getElementById('flight-table').innerHTML='<tr><th>Показатель</th><th>Значение</th><th>Методика</th></tr>'+
+        r('Выручка проекта',m(pm.revenue)+' млн руб.','ставка часа × годовой налет')+
+        r('Совокупный OPEX',m(pm.opex)+' млн руб.','OPEX без ТОиР + резерв ТОиР')+
+        r('EBITDA',m(pm.ebitda)+' млн руб.','выручка - совокупный OPEX')+
+        r('EBITDA-маржа',p(pm.ebitdaMargin),'EBITDA / выручка')+
+        r('Проценты',m(pm.interest)+' млн руб.','график лизинга')+
+        r('Погашение основного долга',m(pm.principal)+' млн руб.','график лизинга')+
+        r('Свободный денежный поток проекта',m(pm.fcf)+' млн руб.','по финансовой модели')+
+        r('Годовой лизинговый платеж',m(pm.leasePayment)+' млн руб.','график лизинга')+
+        r('DSCR',x(pm.dscr),'EBITDA проекта / годовой платеж')+
+        r('NPV проекта',m(pm.npv)+' млн руб.','расчет при WACC '+p(pm.wacc))+
+        r('Минимальный DSCR за горизонт',x(pm.minDscr),'ориентир модели: '+x(pm.dscrCovenant))+
+        r('Остаток лизингового долга на конец года',m(pm.closingBalance)+' млн руб.','график лизинга');
+      document.getElementById('flight-history').innerHTML='<tr><th>Год</th><th>Выручка, млн руб.</th><th>EBITDA, млн руб.</th><th>FCF, млн руб.</th><th>DSCR</th><th>Долг на конец года, млн руб.</th></tr>'+
+        history.map(function(h){return '<tr><td>'+e(h.year)+'</td><td>'+e(m(h.revenue))+'</td><td>'+e(m(h.ebitda))+'</td><td>'+e(m(h.fcf))+'</td><td>'+e(x(h.dscr))+'</td><td>'+e(m(h.closingBalance))+'</td></tr>';}).join('');
+    }).withFailureHandler(function(err){document.getElementById('flight-message').textContent=err&&err.message||'Ошибка загрузки';}).getFlatDashboardData(q);
+  }());
+  </script>
+</section>

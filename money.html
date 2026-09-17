@@ -1,0 +1,30 @@
+<section class="aviation-flat-page">
+  <div class="flat-header"><h2>Денежные потоки и ликвидность</h2><p>Постоянный буфер ликвидности, обязательные платежи и свободный денежный поток. Денежные значения - млн руб.</p></div>
+  <div id="money-message">Загрузка...</div>
+  <div class="flat-grid" id="money-kpis"></div>
+  <section class="flat-section"><h3>Расчет ликвидности</h3><table class="flat-table" id="money-table"></table></section>
+  <section class="flat-section"><h3>Историческая модель денежных потоков</h3><p>Косвенные оценки из финансовой модели. Они не заменяют официальный отчет о движении денежных средств.</p><table class="flat-table" id="money-history"></table></section>
+  <script>
+  (function(){
+    function e(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    function n(v,d){return v==null||!isFinite(Number(v))?'-':Number(v).toLocaleString('ru-RU',{maximumFractionDigits:d==null?1:d,minimumFractionDigits:d==null?1:0});}
+    function f(v){return v==null||!isFinite(Number(v))?'-':n(Number(v)/1000,1);}
+    function c(a,b,note,neg){return '<article class="flat-card"><div class="flat-label">'+e(a)+'</div><div class="flat-value '+(neg?'flat-negative':'')+'">'+e(b)+'</div><div class="flat-note">'+e(note)+'</div></article>';}
+    function r(a,b,s){return '<tr><td>'+e(a)+'</td><td>'+e(b)+'</td><td>'+e(s||'')+'</td></tr>';}
+    var q=window.AVIATION_PERIOD||{year:2024,periodType:'year',quarter:1};
+    google.script.run.withSuccessHandler(function(x){
+      if(!x||x.status!=='success'){document.getElementById('money-message').textContent=x&&x.error||'Ошибка загрузки';return;}
+      var d=x.data||{},k=d.kpis||{},t=d.periodType==='quarter'?d.year+' год, '+d.quarter+' квартал':d.year+' год';
+      document.getElementById('money-message').innerHTML='<div class="flat-alert '+(d.periodAvailable?'':'danger')+'">Период: '+e(t)+'. Постоянный буфер - управленческое допущение, его можно менять в плоской таблице.</div>';
+      document.getElementById('money-kpis').innerHTML=[
+        c('Денежные средства',k.cashFormatted+' млн руб.','баланс'),c('Годовой обязательный платеж',k.annualPaymentFormatted+' млн руб.','кредиты, проценты и лизинг'),c('Средний платеж в месяц',k.monthlyMandatoryPaymentFormatted+' млн руб.','годовой платеж / 12'),c('Модельный FCF',k.modelFcfFormatted+' млн руб.','управленческий показатель',Number(k.modelFcf)<0),c('Cash runway',k.cashRunwayMonthsFormatted+' мес.','покрытие обязательного платежа'),c('Постоянный буфер',k.permanentLiquidityBufferFormatted+' млн руб.',k.policyBufferMonths+' месяца платежей'),c('Дефицит до буфера',k.liquidityDeficitFormatted+' млн руб.','буфер минус деньги',Number(k.liquidityDeficit)>0),c('Лизинговый платеж',k.leasePaymentFormatted+' млн руб./год','текущий модельный показатель')
+      ].join('');
+      document.getElementById('money-table').innerHTML='<tr><th>Показатель</th><th>Значение</th><th>Расчет или источник</th></tr>'+
+        r('Денежные средства',k.cashFormatted+' млн руб.','баланс')+r('Годовой обязательный платеж',k.annualPaymentFormatted+' млн руб.','кредиты, проценты и лизинг')+r('Средний обязательный платеж',k.monthlyMandatoryPaymentFormatted+' млн руб.','годовой платеж / 12')+r('Число месяцев буфера',k.policyBufferMonths,'редактируемая политика')+r('Постоянный буфер ликвидности',k.permanentLiquidityBufferFormatted+' млн руб.','месячный платеж × число месяцев')+r('Дефицит до буфера',k.liquidityDeficitFormatted+' млн руб.','буфер минус деньги')+r('Модельный свободный денежный поток',k.modelFcfFormatted+' млн руб.','годовой модельный показатель')+r('Квартальный FCF',(d.fcfQuarterly||[]).length?'загружен':'не загружен','квартальные строки отсутствуют в источнике');
+      var h=d.cashModelHistory||[];
+      document.getElementById('money-history').innerHTML='<tr><th>Год</th><th>CFO, млн руб.</th><th>CapEx, млн руб.</th><th>FCF после CapEx, млн руб.</th><th>FCFE, млн руб.</th><th>Проценты, млн руб.</th></tr>'+
+        h.map(function(v){return '<tr><td>'+e(v.year)+'</td><td>'+e(f(v.cfo))+'</td><td>'+e(f(v.capex))+'</td><td>'+e(f(v.fcfAfterCapex))+'</td><td>'+e(f(v.fcfe))+'</td><td>'+e(f(v.interest))+'</td></tr>';}).join('');
+    }).withFailureHandler(function(x){document.getElementById('money-message').textContent=x&&x.message||'Ошибка загрузки';}).getFlatDashboardData(q);
+  }());
+  </script>
+</section>
